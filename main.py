@@ -245,7 +245,34 @@ class GraphicBox(pygame.sprite.Sprite):
         self.rect = (WIDTH_MARGIN+x*(GAP+SQ_WIDTH)-GAP,HEIGHT_MARGIN+y*(GAP+SQ_WIDTH)-GAP)
          
 
+def pause_loop(screen):
+    paused = True
+    c = (128,128,128)
+    clock = pygame.time.Clock()
+    while paused:
+        clock.tick(15)
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT: done = True
+            if event.type == pygame.KEYDOWN: paused = False
+        c = ((c[0]+random.randint(0,1))%255,(c[1]+random.randint(0,2))%255,(c[2]+random.randint(0,3))%255)
+        screen.fill(c)
+        pygame.display.flip()
+    return None
 
+class PauseButton(pygame.sprite.Sprite):
+    def __init__(self):
+        super().__init__(background)
+        self.image = pygame.Surface((35,30))
+        self.image.fill(WHITE)
+        img = pygame.Surface((10,20))
+        img.fill(BLACK)
+        self.image.blit(img,(5,5))
+        self.image.blit(img,(20,5))
+        self.rect = self.image.get_rect()
+        self.rect.x, self.rect.y = 10,10
+    def isClicked(self,x,y):
+        if self.rect.x<x<self.rect.right and self.rect.y<y<self.rect.bottom: return True
+        return False
 
 if __name__=="__main__":
     # Set up
@@ -280,6 +307,8 @@ if __name__=="__main__":
         queuebox.image.fill(GREY)
         background.add(queuebox)
         screen.fill(BACKGROUND)
+        PAUSE_BUTTON = PauseButton()
+        
     white = True
     for i in range(20):
         for j in range(10):
@@ -336,6 +365,7 @@ if __name__=="__main__":
                 # if event.key == pygame.K_RIGHT : CURRENT_PIECE.moveRight()
                 # if event.key == pygame.K_DOWN  : CURRENT_PIECE.moveDown()
                 if event.key == pygame.K_UP    : CURRENT_PIECE.rotate()
+                if event.key == pygame.K_p     : pause_loop(screen)
                 if event.key == pygame.K_c     : # Cache piece 
                     if not CACHED_ALREADY:
                         CACHED_ALREADY = True
@@ -351,6 +381,8 @@ if __name__=="__main__":
         if keys[K_DOWN]: CURRENT_PIECE.moveDown()
         if keys[K_LEFT]  and totalcycles%5==0: CURRENT_PIECE.moveLeft()
         if keys[K_RIGHT] and totalcycles%5==0: CURRENT_PIECE.moveRight()
+        if pygame.mouse.get_pressed()[0]:
+            if PAUSE_BUTTON.isClicked(*pygame.mouse.get_pos()): pause_loop(screen)
         if cycles==officalLevelCycles[LEVEL]:
             if CURRENT_PIECE.moveDown(): 
                 MAP.occupySquares(CURRENT_PIECE.colour,*CURRENT_PIECE.convertToPoints())
@@ -366,8 +398,6 @@ if __name__=="__main__":
         if rowsDeleted:
             SCORE += officalScoreSystem(len(rowsDeleted),LEVEL)
             TOTAL_CLEARED_ROWS += 1
-            # level up
-            print(TOTAL_CLEARED_ROWS,officalLevelRowsToClear[LEVEL])
             if TOTAL_CLEARED_ROWS==officalLevelRowsToClear[LEVEL]:
                 LEVEL += 1
                 TOTAL_CLEARED_ROWS = 0
