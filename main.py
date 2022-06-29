@@ -9,6 +9,7 @@ from datastructures import *
 from matrix import Matrix
 import math as maths
 from rules import *
+from pygame.locals import K_DOWN, K_LEFT,K_RIGHT
 SQ_WIDTH = 20
 SQ_HEIGHT = SQ_WIDTH
 WIDTH_MARGIN = 130
@@ -205,18 +206,15 @@ def drawStuff(screen):
     screen.blit(PIECES_QUEUE2.image,(350,150))
     screen.blit(PIECES_QUEUE3.image,(350,200))
     if CACHED_PIECE: screen.blit(CACHED_PIECE.image, (30,100))
-
-def random_piece():
-    """The list wasn't working, should hopefully be able to go bck to it"""
-    n = random.randint(1,7)
-    # return Piece6()
-    if   n==1: return Piece1()
-    elif n==2: return Piece2()
-    elif n==3: return Piece3()
-    elif n==4: return Piece4()
-    elif n==5: return Piece5()
-    elif n==6: return Piece6()
-    elif n==7: return Piece7()
+class Randomiser:
+    def __init__(self) -> None: self.bag = [Piece1,Piece2,Piece3,Piece4,Piece5,Piece6,Piece7]
+    def random_piece(self):
+        if not self.bag:
+            self.bag = [Piece1,Piece2,Piece3,Piece4,Piece5,Piece6,Piece7]
+            random.shuffle(self.bag)
+        n = self.bag[0]
+        self.bag.pop(0)
+        return n()
 class Image(Piece):
     def __init__(self) -> None:
         self.blockImg = pygame.Surface(((2*GAP)+SQ_WIDTH,(2*GAP)+SQ_HEIGHT))
@@ -224,11 +222,6 @@ class Image(Piece):
         img = pygame.Surface((SQ_WIDTH-4*GAP,SQ_HEIGHT-4*GAP))
         img.fill(BLACK)
         self.blockImg.blit(img, (GAP*3,3*GAP))
-        #self.rect = (0,0)
-        # self.drawImage()
-        # self.rect = self.image.get_rect()
-        # self.xPos, self.yPos = 3, 0
-        # self.update()
     def setPos(self,x,y,matrix,which):
         self.choords = matrix
         self.xPos = x
@@ -240,7 +233,6 @@ class Image(Piece):
             self.drawImage()
         self.rect = self.image.get_rect()
         self.update()
-        #self.image.fill(RED)
     
 class GraphicBox(pygame.sprite.Sprite):
     def __init__(self,x,y,colour) -> None:
@@ -274,10 +266,10 @@ if __name__=="__main__":
         backing.image.fill(WHITE)
         background.add(backing)
         holdbox = pygame.sprite.Sprite()
-        holdbox.image = pygame.surface.Surface([SQ_WIDTH*5,SQ_HEIGHT*4])
+        holdbox.image = pygame.surface.Surface([(WIDTH_MARGIN-GAP*10),SQ_WIDTH*3])
         holdbox.rect = backing.image.get_rect()
-        holdbox.rect.x = 10
-        holdbox.rect.y = 70
+        holdbox.rect.x = GAP*5
+        holdbox.rect.y = HEIGHT_MARGIN-GAP*5
         holdbox.image.fill(GREY)
         background.add(holdbox)
         queuebox = pygame.sprite.Sprite()
@@ -300,19 +292,22 @@ if __name__=="__main__":
     font = pygame.font.SysFont('Arial', 20)
     pygame.display.flip()
     MAP = GroudMap()
+    RANDOMISER = Randomiser()
     CURRENT_PIECE = None
     GEN_NEW_PIECE = True
     STORED_PIECE = None
-    LEVEL = 1
-    PIECES_QUEUE1 = random_piece()
-    PIECES_QUEUE2 = random_piece()
-    PIECES_QUEUE3 = random_piece()
+    LEVEL = 0
+    PIECES_QUEUE1 = RANDOMISER.random_piece()
+    PIECES_QUEUE2 = RANDOMISER.random_piece()
+    PIECES_QUEUE3 = RANDOMISER.random_piece()
     CACHED_PIECE = None
     TOTAL_CLEARED_ROWS = 0
     IMAGE = Image()
     cycles = -1
+    totalcycles = 0
     while not done:
         cycles += 1
+        totalcycles += 1
         clock.tick(60)
         if GEN_NEW_PIECE: 
             # LEVEL CHANGE
@@ -321,9 +316,9 @@ if __name__=="__main__":
             CURRENT_PIECE = PIECES_QUEUE1
             PIECES_QUEUE1 = PIECES_QUEUE2
             PIECES_QUEUE2 = PIECES_QUEUE3
-            PIECES_QUEUE3 = random_piece()
+            PIECES_QUEUE3 = RANDOMISER.random_piece()
             while PIECES_QUEUE1==PIECES_QUEUE2==PIECES_QUEUE3:
-                PIECES_QUEUE3 = random_piece()
+                PIECES_QUEUE3 = RANDOMISER.random_piece()
         text = font.render(f"Score: {SCORE}", True, RED, WHITE)
         textRect = text.get_rect()
         textRect.center = (WIDTH // 2, 10)
@@ -334,21 +329,28 @@ if __name__=="__main__":
             if event.type == pygame.QUIT: done = True
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE : done = True
-                if event.key == pygame.K_SPACE  : CURRENT_PIECE.shootDown()
-                if event.key == pygame.K_LEFT   : CURRENT_PIECE.moveLeft()
-                if event.key == pygame.K_RIGHT  : CURRENT_PIECE.moveRight()
-                if event.key == pygame.K_DOWN   : CURRENT_PIECE.moveDown()
-                if event.key == pygame.K_UP     : CURRENT_PIECE.rotate()
-                if event.key == pygame.K_c      : # Cache piece 
+                if event.key == pygame.K_SPACE  : 
+                    CURRENT_PIECE.shootDown()
+                    cycles = officalLevelCycles[LEVEL]
+                # if event.key == pygame.K_LEFT  : CURRENT_PIECE.moveLeft()
+                # if event.key == pygame.K_RIGHT : CURRENT_PIECE.moveRight()
+                # if event.key == pygame.K_DOWN  : CURRENT_PIECE.moveDown()
+                if event.key == pygame.K_UP    : CURRENT_PIECE.rotate()
+                if event.key == pygame.K_c     : # Cache piece 
                     if not CACHED_ALREADY:
                         CACHED_ALREADY = True
                         if not CACHED_PIECE: 
                             CACHED_PIECE = PIECES_QUEUE1
                             PIECES_QUEUE1 = PIECES_QUEUE2
                             PIECES_QUEUE2 = PIECES_QUEUE3
-                            PIECES_QUEUE3 = random_piece()
+                            PIECES_QUEUE3 = RANDOMISER.random_piece()
                         CURRENT_PIECE, CACHED_PIECE = CACHED_PIECE, CURRENT_PIECE
                         CACHED_PIECE.reset()
+
+        keys = pygame.key.get_pressed()
+        if keys[K_DOWN]: CURRENT_PIECE.moveDown()
+        if keys[K_LEFT]  and totalcycles%5==0: CURRENT_PIECE.moveLeft()
+        if keys[K_RIGHT] and totalcycles%5==0: CURRENT_PIECE.moveRight()
         if cycles==officalLevelCycles[LEVEL]:
             if CURRENT_PIECE.moveDown(): 
                 MAP.occupySquares(CURRENT_PIECE.colour,*CURRENT_PIECE.convertToPoints())
@@ -365,6 +367,7 @@ if __name__=="__main__":
             SCORE += officalScoreSystem(len(rowsDeleted),LEVEL)
             TOTAL_CLEARED_ROWS += 1
             # level up
+            print(TOTAL_CLEARED_ROWS,officalLevelRowsToClear[LEVEL])
             if TOTAL_CLEARED_ROWS==officalLevelRowsToClear[LEVEL]:
                 LEVEL += 1
                 TOTAL_CLEARED_ROWS = 0
