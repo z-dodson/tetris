@@ -116,7 +116,6 @@ class Piece(pygame.sprite.Sprite):
         self.xPos, self.yPos, self.choords = o,l,d
         return x,y,m, self.which
     def inGrid(self) -> bool:
-        print(self.convertToPoints())
         for point in self.convertToPoints():
             if 0>point[0] or point[0]>9: return False
         return True
@@ -290,6 +289,7 @@ class MouseButton(pygame.sprite.Sprite):
         if self.rect.x<x<self.rect.right and self.rect.y<y<self.rect.bottom: return True
         return False
 def hold():
+    global CACHED_ALREADY,CACHED_PIECE,PIECES_QUEUE1,PIECES_QUEUE2,PIECES_QUEUE3,RANDOMISER,CURRENT_PIECE
     if not CACHED_ALREADY:
         CACHED_ALREADY = True
         if not CACHED_PIECE: 
