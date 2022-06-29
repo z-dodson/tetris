@@ -115,6 +115,11 @@ class Piece(pygame.sprite.Sprite):
         x,y,m= self.xPos, self.yPos, self.choords
         self.xPos, self.yPos, self.choords = o,l,d
         return x,y,m, self.which
+    def inGrid(self) -> bool:
+        print(self.convertToPoints())
+        for point in self.convertToPoints():
+            if 0>point[0] or point[0]>9: return False
+        return True
 
             
 class Piece1(Piece):
@@ -274,6 +279,26 @@ class PauseButton(pygame.sprite.Sprite):
         if self.rect.x<x<self.rect.right and self.rect.y<y<self.rect.bottom: return True
         return False
 
+class MouseButton(pygame.sprite.Sprite):
+    def __init__(self):
+        super().__init__(background)
+        self.image = pygame.Surface((35,30))
+        self.image.fill(WHITE)
+        self.rect = self.image.get_rect()
+        self.rect.x, self.rect.y = 60,10
+    def isClicked(self,x,y):
+        if self.rect.x<x<self.rect.right and self.rect.y<y<self.rect.bottom: return True
+        return False
+def hold():
+    if not CACHED_ALREADY:
+        CACHED_ALREADY = True
+        if not CACHED_PIECE: 
+            CACHED_PIECE = PIECES_QUEUE1
+            PIECES_QUEUE1 = PIECES_QUEUE2
+            PIECES_QUEUE2 = PIECES_QUEUE3
+            PIECES_QUEUE3 = RANDOMISER.random_piece()
+        CURRENT_PIECE, CACHED_PIECE = CACHED_PIECE, CURRENT_PIECE
+        CACHED_PIECE.reset()
 if __name__=="__main__":
     # Set up
     if 1:
@@ -332,11 +357,13 @@ if __name__=="__main__":
     CACHED_PIECE = None
     TOTAL_CLEARED_ROWS = 0
     IMAGE = Image()
+    USE_MOUSE = True
     cycles = -1
     totalcycles = 0
     while not done:
         cycles += 1
         totalcycles += 1
+        mouseclick = False
         clock.tick(60)
         if GEN_NEW_PIECE: 
             # LEVEL CHANGE
@@ -356,6 +383,7 @@ if __name__=="__main__":
         text2Rect.center = (WIDTH // 2, 40) 
         for event in pygame.event.get():
             if event.type == pygame.QUIT: done = True
+            if event.type == pygame.MOUSEBUTTONDOWN: mouseclick = True 
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE : done = True
                 if event.key == pygame.K_SPACE  : 
@@ -366,21 +394,31 @@ if __name__=="__main__":
                 # if event.key == pygame.K_DOWN  : CURRENT_PIECE.moveDown()
                 if event.key == pygame.K_UP    : CURRENT_PIECE.rotate()
                 if event.key == pygame.K_p     : pause_loop(screen)
+                if event.key == pygame.K_m     : USE_MOUSE = not USE_MOUSE
                 if event.key == pygame.K_c     : # Cache piece 
-                    if not CACHED_ALREADY:
-                        CACHED_ALREADY = True
-                        if not CACHED_PIECE: 
-                            CACHED_PIECE = PIECES_QUEUE1
-                            PIECES_QUEUE1 = PIECES_QUEUE2
-                            PIECES_QUEUE2 = PIECES_QUEUE3
-                            PIECES_QUEUE3 = RANDOMISER.random_piece()
-                        CURRENT_PIECE, CACHED_PIECE = CACHED_PIECE, CURRENT_PIECE
-                        CACHED_PIECE.reset()
+                    hold()
 
         keys = pygame.key.get_pressed()
         if keys[K_DOWN]: CURRENT_PIECE.moveDown()
         if keys[K_LEFT]  and totalcycles%5==0: CURRENT_PIECE.moveLeft()
         if keys[K_RIGHT] and totalcycles%5==0: CURRENT_PIECE.moveRight()
+        if USE_MOUSE:
+            x, y = pygame.mouse.get_pos()
+            if WIDTH_MARGIN<x<WIDTH-WIDTH_MARGIN and HEIGHT_MARGIN<y<HEIGHT-HEIGHT_MARGIN:
+               
+                xpos = CURRENT_PIECE.xPos
+                CURRENT_PIECE.xPos =  (x-WIDTH_MARGIN)//(GAP+SQ_WIDTH)-1
+                if not CURRENT_PIECE.inGrid(): CURRENT_PIECE.xPos = xpos
+                if mouseclick:
+                    if pygame.mouse.get_pressed()[0]:
+                        CURRENT_PIECE.shootDown()
+                        cycles = officalLevelCycles[LEVEL]
+                    elif pygame.mouse.get_pressed()[1]:
+                        hold()
+                    elif pygame.mouse.get_pressed()[2]:
+                        CURRENT_PIECE.rotate()
+                
+
         if pygame.mouse.get_pressed()[0]:
             if PAUSE_BUTTON.isClicked(*pygame.mouse.get_pos()): pause_loop(screen)
         if cycles==officalLevelCycles[LEVEL]:
