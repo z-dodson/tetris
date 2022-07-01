@@ -67,7 +67,7 @@ class Piece(pygame.sprite.Sprite):
     
     def drawImage(self):
         self.image = pygame.Surface((GAP+3*(GAP+SQ_WIDTH),GAP+3*(GAP+SQ_HEIGHT)), pygame.SRCALPHA, 32)
-        for coord in self.choords: self.image.blit(self.blockImg, ((coord[0]+1)*(SQ_WIDTH+GAP),(coord[1]+1)*(SQ_WIDTH+GAP)))
+        for coord in self.choords: self.image.blit(self.blockImg, (round((coord[0]+1)*(SQ_WIDTH+GAP)),round((coord[1]+1)*(SQ_WIDTH+GAP))))
 
     def convertToPoints(self):
         n = []
@@ -195,7 +195,7 @@ class Piece7(Piece):
         super().__init__((0,255,255))
     def drawImage(self):
         self.image = pygame.Surface((GAP+4*(GAP+SQ_WIDTH),GAP+4*(GAP+SQ_HEIGHT)), pygame.SRCALPHA, 32)
-        for coord in self.choords: self.image.blit(self.blockImg, ((coord[0]+1.5)*(SQ_WIDTH+GAP),(coord[1]+1.5)*(SQ_WIDTH+GAP)))
+        for coord in self.choords: self.image.blit(self.blockImg, (round((coord[0]+1.5)*(SQ_WIDTH+GAP)),round((coord[1]+1.5)*(SQ_WIDTH+GAP))))
     def convertToPoints(self):
         n = []
         for point in self.choords: n.append([(point[0]+self.xPos+1.5),(point[1]+self.yPos+1.5)])
@@ -232,7 +232,7 @@ class Image(Piece):
         self.yPos = y
         if which == 7:
             self.image = pygame.Surface((GAP+4*(GAP+SQ_WIDTH),GAP+4*(GAP+SQ_HEIGHT)), pygame.SRCALPHA, 32)
-            for coord in self.choords: self.image.blit(self.blockImg, ((coord[0]+1.5)*(SQ_WIDTH+GAP),(coord[1]+1.5)*(SQ_WIDTH+GAP)))
+            for coord in self.choords: self.image.blit(self.blockImg, (round((coord[0]+1.5)*(SQ_WIDTH+GAP)),round((coord[1]+1.5)*(SQ_WIDTH+GAP))))
         else:
             self.drawImage()
         self.rect = self.image.get_rect()
@@ -381,6 +381,7 @@ if __name__=="__main__":
         text2 = font.render(f"Level: {LEVEL}", True, RED, WHITE)
         text2Rect = text2.get_rect()
         text2Rect.center = (WIDTH // 2, 40) 
+        scroll = False
         for event in pygame.event.get():
             if event.type == pygame.QUIT: done = True
             if event.type == pygame.MOUSEBUTTONDOWN: mouseclick = True 
@@ -397,6 +398,8 @@ if __name__=="__main__":
                 if event.key == pygame.K_m     : USE_MOUSE = not USE_MOUSE
                 if event.key == pygame.K_c     : # Cache piece 
                     hold()
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if event.button == 4 or event.button == 5: scroll = True
 
         keys = pygame.key.get_pressed()
         if keys[K_DOWN]: CURRENT_PIECE.moveDown()
@@ -413,10 +416,8 @@ if __name__=="__main__":
                     if pygame.mouse.get_pressed()[0]:
                         CURRENT_PIECE.shootDown()
                         cycles = officalLevelCycles[LEVEL]
-                    elif pygame.mouse.get_pressed()[1]:
-                        hold()
-                    elif pygame.mouse.get_pressed()[2]:
-                        CURRENT_PIECE.rotate()
+                    elif pygame.mouse.get_pressed()[1] or scroll: CURRENT_PIECE.rotate()
+                    elif pygame.mouse.get_pressed()[2]: hold()
                 
 
         if pygame.mouse.get_pressed()[0]:
